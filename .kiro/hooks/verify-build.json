@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Build verification hook",
+      "trigger": "SessionStart",
+      "description": "Verify build before creating Spring backend",
+      "action": {
+        "type": "command",
+        "command": ""
+      }
+    }
+  ]
+}
