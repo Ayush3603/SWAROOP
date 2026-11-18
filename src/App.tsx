@@ -15,27 +15,25 @@ import type { View } from './shared/types'
 function Shell() {
   const { view, setView, currentProfile, modelsReady } = useApp()
   
-  const navItems: { id: View; label: string; component: React.ReactNode }[] = [
-    { id: 'dashboard', label: 'Dashboard', component: <Dashboard /> },
-    { id: 'pay', label: 'Pay with Face', component: <Pay /> },
-    { id: 'enroll', label: 'Enroll Face', component: <Enroll /> },
-    { id: 'banking', label: 'Banking', component: <Banking /> },
-    { id: 'history', label: 'History', component: <TransactionHistory /> },
-    { id: 'profile', label: 'Profile', component: <Profile /> },
+  const navItems: { id: View; label: string; icon: React.ReactNode }[] = [
+    { id: 'dashboard', label: 'Home', icon: <div className="text-2xl">🏠</div> },
+    { id: 'pay', label: 'Pay', icon: <div className="text-2xl">💳</div> },
+    { id: 'banking', label: 'Bank', icon: <div className="text-2xl">🏦</div> },
+    { id: 'enroll', label: 'Face', icon: <div className="text-2xl">👤</div> },
+    { id: 'history', label: 'History', icon: <div className="text-2xl">📋</div> },
+    { id: 'profile', label: 'Profile', icon: <div className="text-2xl">⚙️</div> },
   ]
-  
-  const currentComponent = navItems.find(item => item.id === view)?.component
-  
+
   return (
-    <div className="min-h-full bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900">
+    <div className="min-h-full bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900 pb-20 sm:pb-0">
       {/* ── Header ── */}
-      <header className="sticky top-0 z-40 glass border-b border-slate-200/60 bg-white/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+      <header className="sticky top-0 z-40 glass border-b border-slate-200/60 bg-white/90 backdrop-blur-sm px-4 py-3">
+        <div className="mx-auto max-w-6xl flex items-center justify-between gap-4">
           <button onClick={() => setView('dashboard')} className="flex items-center gap-2">
             <Logo compact />
           </button>
           
-          {/* Desktop nav - no emojis */}
+          {/* Desktop nav - top */}
           <nav className="hidden md:flex items-center gap-2">
             {navItems.map((item) => (
               <button 
@@ -61,21 +59,43 @@ function Shell() {
               </span>
             )}
             <button onClick={() => setView('profile')}
-              className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 text-sm font-bold text-white shadow-md hover:shadow-lift transition-shadow"
-              title="Profile">
+              className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 text-sm font-bold text-white shadow-md hover:shadow-lift transition-shadow">
               {currentProfile?.name.charAt(0).toUpperCase() ?? '?'}
             </button>
           </div>
         </div>
       </header>
       
+      {/* Mobile Bottom Navigation - Shows only on mobile */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 px-4 py-3">
+        <div className="flex justify-around items-center">
+          {navItems.map((item) => (
+            <button 
+              key={item.id} 
+              onClick={() => setView(item.id)}
+              className={`flex flex-col items-center gap-1 transition-all ${
+                view === item.id ? 'text-indigo-600' : 'text-slate-400'
+              }`}
+            >
+              <div className="text-2xl">{item.icon}</div>
+              <span className="text-[10px] font-semibold">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+      
       {/* ── Main content ── */}
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-8">
-        {currentComponent}
+      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-8">
+        {view === 'dashboard' && <Dashboard />}
+        {view === 'pay' && <Pay />}
+        {view === 'enroll' && <Enroll />}
+        {view === 'banking' && <Banking />}
+        {view === 'profile' && <Profile />}
+        {view === 'history' && <TransactionHistory />}
       </main>
       
       {/* ── Footer ── */}
-      <footer className="pb-6 text-center text-xs text-slate-400">
+      <footer className="hidden md:block pb-6 text-center text-xs text-slate-400">
         Swaruoop Pay · face recognition runs entirely in your browser · no data leaves your device
       </footer>
     </div>
