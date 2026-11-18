@@ -1,14 +1,15 @@
 // ─── Pay View ────────────────────────────────────────────────────────────────
 // Face scan → identity verified → charge wallet.
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import Camera from '../face/Camera'
-import type { DetectedFace } from '../face/faceApi'
-import { Alert, Avatar, Badge, Button, Card, SectionTitle, Spinner } from '../shared/ui'
+import type { DetectedFace, FaceDetectionResult } from '../face/faceApi'
+import { Alert, Avatar, Badge, Button, Card, SectionTitle, Spinner as SpinnerComp } from '../shared/ui'
 import { useApp } from '../shared/AppContext'
 import { formatCurrency, parseAmountToCents, formatDate } from '../shared/payment'
 import type { Profile, Transaction } from '../shared/types'
 
 type Status = 'looking' | 'unknown' | 'matched'
+type PinStatus = 'none' | 'entering' | 'verifying' | 'verified' | 'failed'
 
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000] // cents
 
@@ -19,15 +20,41 @@ export default function Pay() {
   const [matched, setMatched]   = useState<Profile | null>(null)
   const [amount, setAmount]     = useState('')
   const [result, setResult]     = useState<{ ok: boolean; error?: string; txn?: Transaction } | null>(null)
-  const lockedRef     = useRef(false)
+  
+  // Crowd detection and PIN
+  const [facesDetected, setFacesDetected] = useState<number>(0)
+  const [isCrowd, setIsCrowd] = useState(false)
+  const [pin, setPin] = useState('')
+  const [pinStatus, setPinStatus] = useState<PinStatus>('none')
+  
+  // Refs
+  const lockedRef = useRef(false)
   const lastStatusRef = useRef<Status>('looking')
-
-  const handleDetection = (face: DetectedFace | null) => {
+  
+  const handleDetection = (face: DetectedFace | null, result?: FaceDetectionResult) => {
     if (lockedRef.current) return
     if (!face) {
       if (lastStatusRef.current !== 'looking') { lastStatusRef.current = 'looking'; setStatus('looking') }
+      if (result) {
+        setFacesDetected(result.faces.length)
+        setIsCrowd(result.isCrowd || false)
+      }
       return
     }
+    
+    // Check for crowd
+    if (result) {
+      setFacesDetected(result.faces.length)
+      setIsCrowd(result.isCrowd || false)
+      
+      // If crowd detected, don't match face
+      if (result.isCrowd) {
+        setStatus('looking')
+        setMatched(null)
+        return
+      }
+    }
+    
     const { profile } = identifyFace(face.descriptor)
     if (profile) {
       lockedRef.current = true
@@ -37,19 +64,46 @@ export default function Pay() {
       lastStatusRef.current = 'unknown'; setStatus('unknown')
     }
   }
-
-  const reset = () => {
-    lockedRef.current = false; lastStatusRef.current = 'looking'
-    setMatched(null); setStatus('looking'); setScanning(true); setAmount(''); setResult(null)
+  
+  const handlePinSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setPinStatus('verifying')
+    
+    // Simulate PIN verification (always passes for demo)
+    setTimeout(() => {
+      setPinStatus('verified')
+      // Now process the payment
+      const cents = parseAmountToCents(amount)
+      if (!cents) { 
+        setResult({ ok: false, error: 'Enter a valid amount, e.g. 25.00' }); 
+        setPinStatus('none')
+        return 
+      }
+      const res = chargeProfile(matched!.id, cents)
+      setResult(res.ok ? { ok: true, txn: res.transaction } : { ok: false, error: res.error })
+    }, 500)
   }
-
+  
   const handlePay = () => {
-    if (!matched) return
     const cents = parseAmountToCents(amount)
     if (!cents) { setResult({ ok: false, error: 'Enter a valid amount, e.g. 25.00' }); return }
-    const res = chargeProfile(matched.id, cents)
+    const res = chargeProfile(matched!.id, cents)
     setResult(res.ok ? { ok: true, txn: res.transaction } : { ok: false, error: res.error })
   }
+  
+  const reset = () => {
+    lockedRef.current = false
+    lastStatusRef.current = 'looking'
+    setMatched(null); setStatus('looking'); setScanning(true); setAmount(''); setResult(null)
+    setPin(''); setPinStatus('none'); setFacesDetected(0); setIsCrowd(false)
+  }
+  
+  // Reset PIN when leaving matched state
+  useEffect(() => {
+    if (status !== 'matched') {
+      setPinStatus('none')
+    }
+  }, [status])
 
   // ── Success ──
   if (result?.ok && result.txn) {
@@ -65,7 +119,6 @@ export default function Pay() {
             <span className="font-semibold text-slate-700">{formatCurrency(txn.amount)}</span> charged to{' '}
             <span className="font-semibold text-slate-700">{txn.profileName}</span>
           </p>
-
           <div className="mt-5 grid grid-cols-2 gap-3 text-left">
             <div className="rounded-2xl bg-emerald-50 p-3 border border-emerald-100">
               <p className="text-xs text-emerald-600 font-semibold">New balance</p>
@@ -80,7 +133,6 @@ export default function Pay() {
               <p className="mt-0.5 font-mono text-xs font-semibold text-slate-600 break-all">{txn.id}</p>
             </div>
           </div>
-
           <div className="mt-6 flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setView('dashboard')}>Dashboard</Button>
             <Button className="flex-1" onClick={reset}>Pay again</Button>
@@ -90,11 +142,58 @@ export default function Pay() {
     )
   }
 
+  // ── Crowd detected - PIN required ──
+  if (isCrowd && matched && pinStatus !== 'verified') {
+    return (
+      <div className="mx-auto max-w-md fade-in">
+        <Card className="text-center shadow-lift">
+          <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-3xl bg-amber-100 text-3xl">👥</div>
+          <h2 className="text-xl font-bold text-slate-900">Multiple people detected</h2>
+          <p className="mt-2 text-sm text-slate-500">
+            For security, please enter your PIN to confirm payment.
+          </p>
+          
+          <form onSubmit={handlePinSubmit} className="mt-6 space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Enter 4-digit PIN</label>
+              <input
+                type="password"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                maxLength={4}
+                placeholder="1234"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 text-center text-xl font-bold text-slate-900 outline-none focus:border-indigo-400 focus:bg-white"
+              />
+              <p className="text-center text-xs text-slate-400 mt-2">Enter your security PIN</p>
+            </div>
+            
+            {pinStatus === 'failed' && (
+              <Alert type="error">Invalid PIN. Please try again.</Alert>
+            )}
+            
+            <div className="flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={() => { setPinStatus('none'); reset() }}>
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="flex-1"
+                disabled={pin.length !== 4 || pinStatus === 'verifying'}
+              >
+                {pinStatus === 'verifying' ? 'Verifying...' : 'Confirm'}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
+    )
+  }
+
   // ── Model error ──
   if (modelError) return (
     <div className="mx-auto max-w-md fade-in">
       <Card className="text-center shadow-lift">
-        <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-3xl bg-rose-100 text-3xl">⚠️</div>
+        <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-3xl bg-rose-100 text-3xl">⚠</div>
         <p className="text-lg font-bold text-slate-900">Face models failed to load</p>
         <p className="mt-1 text-sm text-slate-500">{modelError}</p>
         <Button className="mt-5" onClick={retryModels}>Retry</Button>
@@ -105,20 +204,29 @@ export default function Pay() {
   return (
     <div className="mx-auto max-w-4xl space-y-4 fade-in">
       <SectionTitle title="🤳 Pay with your face" subtitle="Look at the camera — your account is identified automatically." />
-
       <div className="grid gap-5 md:grid-cols-2">
         {/* ── Camera column ── */}
         <div className="space-y-3">
           {modelsReady
             ? <Camera scanning={scanning} onDetection={handleDetection}
-                hint={status === 'unknown' ? 'Face not recognized — link your face first' : 'Look at the camera to identify your account'} />
+                hint={status === 'unknown' ? 'Face not recognized — link your face first' : 
+                      isCrowd ? 'Multiple people detected - PIN required for payment' : 
+                      'Look at the camera to identify your account'} />
             : <div className="grid aspect-[4/3] place-items-center rounded-3xl bg-slate-900">
                 <div className="flex flex-col items-center gap-3 text-slate-300">
-                  <Spinner className="h-8 w-8 text-cyan-400" />
+                  <SpinnerComp className="h-8 w-8 text-cyan-400" />
                   <p className="text-sm">Loading face models…</p>
                 </div>
               </div>}
-
+          
+          {/* Crowd warning */}
+          {isCrowd && (
+            <Alert type="info" className="flex items-center justify-center gap-2">
+              <span>👥</span>
+              <span className="font-semibold">Multiple people detected - PIN required</span>
+            </Alert>
+          )}
+          
           {/* Status badge */}
           <div className="flex justify-center">
             {status === 'looking' && (
@@ -130,11 +238,14 @@ export default function Pay() {
             {status === 'unknown' && (
               <Badge tone="rose" className="px-4 py-2 text-sm">😕 No matching account found</Badge>
             )}
-            {status === 'matched' && (
+            {status === 'matched' && !isCrowd && (
               <Badge tone="emerald" className="px-4 py-2 text-sm">✅ Identity verified!</Badge>
             )}
+            {isCrowd && status === 'matched' && (
+              <Badge tone="amber" className="px-4 py-2 text-sm">👥 Crowd detected - PIN required</Badge>
+            )}
           </div>
-
+          
           {status === 'unknown' && (
             <p className="text-center text-sm text-slate-500">
               Haven't linked your face yet?{' '}
@@ -147,7 +258,7 @@ export default function Pay() {
 
         {/* ── Payment column ── */}
         <div>
-          {matched ? (
+          {matched && !isCrowd ? (
             <Card className="slide-up shadow-lift space-y-4">
               {/* Matched user */}
               <div className="flex items-center gap-3 rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3">
@@ -205,10 +316,14 @@ export default function Pay() {
             </Card>
           ) : (
             <Card className="h-full flex flex-col items-center justify-center text-center py-12 gap-3">
-              <div className="text-5xl">👤</div>
-              <p className="font-bold text-slate-800">Waiting for face scan</p>
+              <div className="text-5xl">{isCrowd ? '👥' : '👤'}</div>
+              <p className="font-bold text-slate-800">
+                {isCrowd ? 'Multiple people detected' : 'Waiting for face scan'}
+              </p>
               <p className="text-sm text-slate-500 max-w-xs">
-                Once the camera identifies your face, the payment form will appear here.
+                {isCrowd 
+                  ? 'Enter PIN to confirm payment for security.' 
+                  : 'Once the camera identifies your face, the payment form will appear here.'}
               </p>
             </Card>
           )}

@@ -1,9 +1,14 @@
 // Live camera feed with face-detection overlay (cyan bounding box + corner accents).
 import { useEffect, useRef } from 'react'
 import { useCamera } from './useCamera'
-import { detectFace, type DetectedFace } from './faceApi'
+import { detectFace, type DetectedFace, type FaceDetectionResult } from './faceApi'
 
-interface Props { scanning: boolean; onDetection: (f: DetectedFace | null) => void; hint?: string; className?: string }
+interface Props { 
+  scanning: boolean; 
+  onDetection: (f: DetectedFace | null, result?: FaceDetectionResult) => void; 
+  hint?: string; 
+  className?: string 
+}
 
 export default function Camera({ scanning, onDetection, hint, className }: Props) {
   const { videoRef, ready, error, start, stop } = useCamera()
@@ -43,7 +48,17 @@ export default function Camera({ scanning, onDetection, hint, className }: Props
       const v = videoRef.current
       if (scanningRef.current && ready && v && v.readyState >= 2 && !processingRef.current) {
         processingRef.current = true
-        try { const f = await detectFace(v); if (!cancelled) { draw(f); cbRef.current(f) } }
+        try { 
+          const f = await detectFace(v)
+          if (!cancelled) { 
+            draw(f.singleFace)
+            if (f.faces.length === 0) {
+              cbRef.current(null, undefined)
+            } else {
+              cbRef.current(f.singleFace, f)
+            }
+          } 
+        }
         catch { /* non-fatal */ } finally { processingRef.current = false }
       }
       rafRef.current = requestAnimationFrame(loop)

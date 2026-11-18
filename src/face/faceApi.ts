@@ -23,14 +23,32 @@ export interface DetectedFace {
   descriptor: Float32Array
 }
 
-const OPTS = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })
+export interface FaceDetectionResult {
+  faces: DetectedFace[]
+  isCrowd: boolean
+  singleFace: DetectedFace | null
+}
 
-export async function detectFace(video: HTMLVideoElement): Promise<DetectedFace | null> {
-  if (!loaded) return null
-  const r = await faceapi.detectSingleFace(video, OPTS).withFaceLandmarks().withFaceDescriptor()
-  if (!r) return null
-  const { x, y, width, height } = r.detection.box
-  return { score: r.detection.score, box: { x, y, width, height }, descriptor: r.descriptor }
+const OPTS = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })
+const CROWD_THRESHOLD = 2 // More than 2 people = crowd
+
+export async function detectFace(video: HTMLVideoElement): Promise<FaceDetectionResult> {
+  if (!loaded) return { faces: [], isCrowd: false, singleFace: null }
+  
+  // Detect all faces in the frame
+  const detections = await faceapi.detectAllFaces(video, OPTS).withFaceLandmarks().withFaceDescriptors()
+  
+  const faces: DetectedFace[] = detections.map(d => {
+    const { x, y, width, height } = d.detection.box
+    return { score: d.detection.score, box: { x, y, width, height }, descriptor: d.descriptor }
+  })
+  
+  const isCrowd = faces.length > CROWD_THRESHOLD
+  
+  // Only return single face if exactly one person detected
+  const singleFace = faces.length === 1 ? faces[0] : null
+  
+  return { faces, isCrowd, singleFace }
 }
 
 export interface EnrolledFace { id: string; descriptor: number[] }
