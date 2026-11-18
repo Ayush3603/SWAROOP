@@ -1,11 +1,15 @@
 // ─── Dashboard ───────────────────────────────────────────────────────────────
-// Main home screen: wallet, quick actions, recent activity.
-import { Avatar, IconPay, IconBank, IconFace, IconHistory, IconTrendingDown, IconTrendingUp, StatsCard } from '../shared/ui'
+// Main home screen: wallet, banking, face enrollment, transactions.
+import { useState } from 'react'
+import { Avatar, IconPay, IconBank, IconFace, IconHistory, IconTrendingDown, IconTrendingUp, StatsCard, Button, Card, SectionTitle } from '../shared/ui'
 import { useApp } from '../shared/AppContext'
 import { formatCurrency, formatDate } from '../shared/payment'
+import type { BankAccount } from '../shared/types'
 
 export default function Dashboard() {
   const { currentProfile, myBanks, myTransactions, hasLinkedFace, setView, logout } = useApp()
+  const [showBanking, setShowBanking] = useState(false)
+  const [showFace, setShowFace] = useState(false)
   if (!currentProfile) return null
   const recent = myTransactions.slice(0, 5)
   const setupDone = hasLinkedFace && myBanks.length > 0 && currentProfile.wallet > 0
@@ -28,7 +32,7 @@ export default function Dashboard() {
             {formatCurrency(currentProfile.wallet)}
           </p>
           {currentProfile.wallet === 0 && !setupDone && (
-            <button onClick={() => setView('banking')}
+            <button onClick={() => setShowBanking(true)}
               className="mt-3 inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-xs font-semibold text-white hover:bg-white/30 transition-all">
               <span>+</span> Add funds to get started
             </button>
@@ -36,24 +40,24 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Quick Actions ── */}
+      {/* ── Quick Actions Grid ── */}
       <div className="grid grid-cols-4 gap-3">
         <button 
-          onClick={() => setView('pay')}
+          onClick={() => setShowFace(true)}
           className="flex flex-col items-center gap-2 rounded-2xl bg-indigo-600 p-4 text-center transition-all hover:bg-indigo-500 active:scale-95 shadow-lg"
         >
           <IconPay className="h-8 w-8 text-white" />
-          <span className="text-sm font-semibold text-white">Pay</span>
+          <span className="text-sm font-semibold text-white">Pay with Face</span>
         </button>
         <button 
-          onClick={() => setView('banking')}
+          onClick={() => setShowBanking(true)}
           className="flex flex-col items-center gap-2 rounded-2xl bg-white p-4 text-center transition-all hover:bg-slate-50 active:scale-95 shadow-md ring-1 ring-slate-200"
         >
           <IconBank className="h-8 w-8 text-indigo-600" />
           <span className="text-sm font-semibold text-slate-700">Banking</span>
         </button>
         <button 
-          onClick={() => setView('enroll')}
+          onClick={() => setShowFace(true)}
           className="flex flex-col items-center gap-2 rounded-2xl bg-white p-4 text-center transition-all hover:bg-slate-50 active:scale-95 shadow-md ring-1 ring-slate-200"
         >
           <IconFace className="h-8 w-8 text-indigo-600" />
@@ -70,8 +74,83 @@ export default function Dashboard() {
         </button>
       </div>
 
+      {/* ── Banking Section ── */}
+      {showBanking && (
+        <div className="animate-fade-in">
+          <SectionTitle title="🏦 Banking" subtitle="Link your bank account to fund your wallet" />
+          <Card>
+            {myBanks.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-slate-600">No bank accounts linked</p>
+                <p className="text-sm text-slate-400 mt-1">Accounts will auto-link when you sign up</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {myBanks.map((bank) => (
+                  <div key={bank.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                        {bank.bankName.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900">{bank.bankName}</p>
+                        <p className="text-xs text-slate-500">••••{bank.last4} - {bank.accountType}</p>
+                      </div>
+                    </div>
+                    <Button onClick={() => alert(`Add funds to ${bank.bankName}`)} variant="secondary" className="py-2 px-4 text-xs">
+                      Add Funds
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button onClick={() => alert('Add new bank account')} className="w-full mt-4" variant="secondary">
+              + Add New Bank
+            </Button>
+          </Card>
+        </div>
+      )}
+
+      {/* ── Face Enrollment Section ── */}
+      {showFace && (
+        <div className="animate-fade-in">
+          <SectionTitle 
+            title={hasLinkedFace ? 'Manage Face' : 'Link Face for Payments'} 
+            subtitle="Register your face to make payments just by looking at the camera" 
+          />
+          <Card className="text-center py-8">
+            {hasLinkedFace ? (
+              <div>
+                <div className="mx-auto mb-4 h-20 w-20 rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                  <IconFace className="h-10 w-10 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">Face is Linked</h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  {currentProfile.name} can now pay by looking at the camera.
+                </p>
+                <div className="mt-6 flex justify-center gap-3">
+                  <Button onClick={() => setShowFace(false)} variant="secondary">Back to Dashboard</Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="mx-auto mb-4 h-16 w-16 rounded-3xl bg-indigo-100 flex items-center justify-center">
+                  <IconFace className="h-8 w-8 text-indigo-600" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900">Link Your Face</h3>
+                <p className="mt-2 text-sm text-slate-500 mb-4">
+                  Enable face recognition to pay with just a look.
+                </p>
+                <Button onClick={() => setView('enroll')} variant="primary">Link Face Now</Button>
+                <Button onClick={() => setShowFace(false)} variant="secondary" className="mt-2">Back to Dashboard</Button>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
       {/* ── Stats ── */}
-      {!setupDone && (
+      {!setupDone && !showBanking && !showFace && (
         <div className="grid grid-cols-3 gap-3">
           <StatsCard label="Transactions" value={String(myTransactions.length)} tone="slate" />
           <StatsCard label="Banks" value={String(myBanks.length)} tone="indigo" />
