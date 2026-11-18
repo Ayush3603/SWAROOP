@@ -2,6 +2,129 @@
 // Every visual element used across the app lives here.
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
 
+// ─── Professional Icons (BHIM UPI style) ─────────────────────────────────────
+export function IconPay({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 12h8" />
+      <path d="M12 8v8" />
+    </svg>
+  )
+}
+
+export function IconBank({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 21h18" />
+      <path d="M5 21V7l8-4 8 4v14" />
+      <path d="M10 21v-6" />
+      <path d="M14 21v-6" />
+    </svg>
+  )
+}
+
+export function IconFace({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="9" cy="10" r="1" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="10" r="1" fill="currentColor" stroke="none" />
+      <path d="M8 15h8" />
+    </svg>
+  )
+}
+
+export function IconHistory({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  )
+}
+
+export function IconCheck({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+
+export function IconWarning({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  )
+}
+
+export function IconLight({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="5" />
+      <path d="M12 1v2" />
+      <path d="M12 21v2" />
+      <path d="M4.22 4.22l1.42 1.42" />
+      <path d="M18.36 18.36l1.42 1.42" />
+      <path d="M1 12h2" />
+      <path d="M21 12h2" />
+      <path d="M4.22 19.78l1.42-1.42" />
+      <path d="M18.36 5.64l1.42-1.42" />
+    </svg>
+  )
+}
+
+export function IconEye({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+export function IconGlasses({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M1 12h6" />
+      <path d="M17 12h6" />
+      <circle cx="5" cy="12" r="3" />
+      <circle cx="19" cy="12" r="3" />
+    </svg>
+  )
+}
+
+export function IconLock({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  )
+}
+
+export function IconTrendingUp({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+      <polyline points="17 6 23 6 23 12" />
+    </svg>
+  )
+}
+
+export function IconTrendingDown({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+      <polyline points="17 18 23 18 23 12" />
+    </svg>
+  )
+}
+
 // ─── Button ──────────────────────────────────────────────────────────────────
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success'
 const V: Record<Variant, string> = {
