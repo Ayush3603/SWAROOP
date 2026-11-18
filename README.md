@@ -12,8 +12,26 @@
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-3.4-06b6d4?style=flat-square&logo=tailwindcss)](https://tailwindcss.com)
 [![face-api.js](https://img.shields.io/badge/face--api.js-1.7-8b5cf6?style=flat-square)](https://github.com/vladmandic/face-api)
 [![100% Browser](https://img.shields.io/badge/runs-100%25%20in%20browser-22c55e?style=flat-square)](#)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.5-6db33f?style=flat-square&logo=springboot)](https://spring.io/projects/spring-boot)
 
 **A full facial recognition payment app — sign up, link your bank, link your face, and pay just by looking at the camera. Everything runs in your browser. Zero data leaves your device.**
+
+---
+
+## Quick Start
+
+### Frontend (React)
+```bash
+PATH="/home/yuno/.tools/node/bin:$PATH" npm run dev
+# Open http://localhost:5173
+```
+
+### Backend (Spring Boot)
+```bash
+cd backend
+mvn spring-boot:run
+# API runs on http://localhost:8080
+```
 
 ---
 
@@ -91,7 +109,7 @@ You register with a phone number, 2 bank accounts get auto-linked to your number
 
 ## Tech Stack
 
-### Core Framework
+### Frontend Stack
 
 | Technology | Version | Why We Used It |
 |---|---|---|
@@ -124,6 +142,30 @@ You register with a phone number, 2 bank accounts get auto-linked to your number
 
 ---
 
+### Backend Stack (Spring Boot)
+
+| Technology | Version | Why We Used It |
+|---|---|---|
+| **Java** | 21 | Modern, enterprise-grade language with strong type system |
+| **Spring Boot** | 3.3.5 | Rapid development with opinionated defaults |
+| **Spring Data JPA** | — | ORM with Hibernate for database operations |
+| **H2 Database** | — | In-memory database perfect for development/demo |
+| **Maven** | — | Dependency management and build automation |
+| **Lombok** | — | Reduces boilerplate code with annotations |
+
+**REST API Endpoints:**
+- `POST /api/auth/signup` - Register new user
+- `POST /api/auth/login` - Login existing user
+- `POST /api/face/enroll/{profileId}` - Enroll face
+- `POST /api/face/identify` - Identify face
+- `GET /api/banking/{profileId}/accounts` - Get linked accounts
+- `POST /api/banking/{profileId}/add-funds` - Add funds to wallet
+- `POST /api/pay/charge` - Process payment
+
+**Full backend docs in** [`backend/README.md`](backend/README.md)
+
+---
+
 ## Project Structure
 
 Every domain has its **own folder** — each folder owns its files completely and nothing leaks across wrong boundaries.
@@ -138,7 +180,7 @@ project in kiro ide/
 │       ├── face_landmark_68_model.bin
 │       └── face_recognition_model.bin
 │
-├── src/
+├── src/                             ── REACT FRONTEND
 │   │
 │   ├── auth/                        ── AUTHENTICATION DOMAIN
 │   │   ├── AuthScreen.tsx           ← Login / Signup UI (phone number only)
@@ -176,6 +218,16 @@ project in kiro ide/
 │   ├── App.tsx                      ← Root: auth gate + nav shell + routing
 │   ├── main.tsx                     ← React DOM entry point
 │   └── index.css                    ← Tailwind directives
+│
+├── backend/                         ── SPRING BOOT BACKEND
+│   ├── src/main/java/com/swaruoop/pay/
+│   │   ├── SwaruoopPayApplication.java
+│   │   ├── controller/              ← REST API endpoints
+│   │   ├── model/                   ← JPA entities
+│   │   ├── repository/              ← JPA repositories
+│   │   └── service/                 ← Business logic
+│   ├── pom.xml
+│   └── README.md
 │
 ├── index.html                       ← HTML shell
 ├── package.json
@@ -217,6 +269,41 @@ PATH="/home/yuno/.tools/node/bin:$PATH" npm run preview
 ```
 
 Opens at **http://localhost:4173**
+
+---
+
+### Backend (Spring Boot)
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+**API runs on:** http://localhost:8080
+
+**H2 Console:** http://localhost:8080/h2-console
+
+- JDBC URL: `jdbc:h2:mem:swaruoop-pay`
+- Username: `sa`
+- Password: (empty)
+
+**Prerequisites:**
+- Java 21+
+- Maven 3.6+
+
+**Install Maven:**
+```bash
+# Option 1: Using apt (requires sudo)
+sudo apt install maven
+
+# Option 2: Manual install
+mkdir -p ~/tools/maven
+cd ~/tools/maven
+curl -sL https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz | tar -xzf - --strip-components=1
+export PATH="$HOME/tools/maven/bin:$PATH"
+```
+
+**Full backend docs in** [`backend/README.md`](backend/README.md)
 
 ---
 
