@@ -59,3 +59,34 @@ export function matchFace(descriptor: Float32Array, enrolled: EnrolledFace[], th
   const best = new faceapi.FaceMatcher(labeled, threshold).findBestMatch(descriptor)
   return best.label === 'unknown' ? { id: null, distance: best.distance } : { id: best.label, distance: best.distance }
 }
+
+// Enhanced face matching with multiple samples
+export async function enrollFace(video: HTMLVideoElement, iterations = 5): Promise<Float32Array | null> {
+  if (!loaded) return null
+  
+  const descriptors: Float32Array[] = []
+  
+  for (let i = 0; i < iterations; i++) {
+    await new Promise(resolve => setTimeout(resolve, 200)) // Wait between samples
+    
+    const detections = await faceapi.detectAllFaces(video, OPTS).withFaceLandmarks().withFaceDescriptors()
+    if (detections.length > 0) {
+      descriptors.push(detections[0].descriptor)
+    }
+  }
+  
+  if (descriptors.length === 0) return null
+  
+  // Average all descriptors for better accuracy
+  const averaged = new Float32Array(128)
+  descriptors.forEach(desc => {
+    for (let i = 0; i < 128; i++) {
+      averaged[i] += desc[i]
+    }
+  })
+  for (let i = 0; i < 128; i++) {
+    averaged[i] /= descriptors.length
+  }
+  
+  return averaged
+}
